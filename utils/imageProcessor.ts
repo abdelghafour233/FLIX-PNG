@@ -1,14 +1,37 @@
 
 import { ImageFormat } from '../types';
+import heic2any from 'heic2any';
 
 /**
- * Converts an image file to the target format and quality client-side using Canvas.
+ * Converts an image file (including HEIC) to the target format and quality client-side.
  */
-export const convertImage = (
+export const convertImage = async (
   file: File, 
   targetFormat: ImageFormat, 
   quality: number
 ): Promise<{ blob: Blob; size: number }> => {
+  let sourceBlob: Blob | File = file;
+
+  // Handle HEIC/HEIF files
+  const isHeic = file.type === 'image/heic' || 
+                 file.type === 'image/heif' || 
+                 file.name.toLowerCase().endsWith('.heic') || 
+                 file.name.toLowerCase().endsWith('.heif');
+
+  if (isHeic) {
+    try {
+      const converted = await heic2any({
+        blob: file,
+        toType: 'image/jpeg',
+        quality: quality
+      });
+      sourceBlob = Array.isArray(converted) ? converted[0] : converted;
+    } catch (err) {
+      console.error('HEIC conversion failed:', err);
+      throw new Error('فشل تحويل صيغة HEIC');
+    }
+  }
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -24,7 +47,7 @@ export const convertImage = (
           return;
         }
 
-        // Handle transparency for JPEG (fill background white)
+        // Fill white background for JPEGs to handle transparency
         if (targetFormat === 'image/jpeg') {
           ctx.fillStyle = '#FFFFFF';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -48,6 +71,6 @@ export const convertImage = (
       img.src = e.target?.result as string;
     };
     reader.onerror = () => reject(new Error('Failed to read file'));
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(sourceBlob);
   });
 };
