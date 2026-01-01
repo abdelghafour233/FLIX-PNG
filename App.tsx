@@ -12,13 +12,16 @@ import {
   RefreshCw, 
   Trash2, 
   Languages,
-  Sparkles
+  Sparkles,
+  AlertTriangle
 } from 'lucide-react';
 
 const App: React.FC = () => {
   const [lang, setLang] = useState<Language>('ar');
   const [files, setFiles] = useState<FileState[]>([]);
   const [isProcessingAll, setIsProcessingAll] = useState(false);
+  const [appError, setAppError] = useState<string | null>(null);
+  
   const t = translations[lang];
 
   useEffect(() => {
@@ -29,16 +32,21 @@ const App: React.FC = () => {
   const toggleLanguage = () => setLang(prev => prev === 'en' ? 'ar' : 'en');
 
   const handleFilesAdded = (newFiles: File[]) => {
-    const newStates: FileState[] = newFiles.map(file => ({
-      id: Math.random().toString(36).substring(7),
-      file,
-      preview: URL.createObjectURL(file),
-      targetFormat: 'image/jpeg',
-      quality: 0.85,
-      status: 'idle',
-      progress: 0
-    }));
-    setFiles(prev => [...prev, ...newStates]);
+    try {
+      const newStates: FileState[] = newFiles.map(file => ({
+        id: Math.random().toString(36).substring(7),
+        file,
+        preview: URL.createObjectURL(file),
+        targetFormat: 'image/jpeg',
+        quality: 0.85,
+        status: 'idle',
+        progress: 0
+      }));
+      setFiles(prev => [...prev, ...newStates]);
+      setAppError(null);
+    } catch (err) {
+      setAppError(lang === 'ar' ? 'فشل إضافة الصور' : 'Failed to add images');
+    }
   };
 
   const handleUpdateFile = (id: string, updates: Partial<FileState>) => {
@@ -70,6 +78,7 @@ const App: React.FC = () => {
         resultSize: size 
       });
     } catch (error) {
+      console.error(error);
       handleUpdateFile(id, { status: 'error', progress: 0 });
     }
   };
@@ -93,14 +102,19 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 selection:bg-blue-100 pb-20">
-      {/* Decorative Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-blue-100/50 rounded-full blur-3xl"></div>
         <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-indigo-100/50 rounded-full blur-3xl"></div>
       </div>
 
       <div className="relative max-w-5xl mx-auto px-4 py-8 md:py-16">
-        {/* Header */}
+        {appError && (
+          <div className="mb-8 p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5" />
+            <p className="font-bold">{appError}</p>
+          </div>
+        )}
+
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
           <motion.div 
             initial={{ opacity: 0, x: -20 }}
@@ -130,7 +144,6 @@ const App: React.FC = () => {
           </motion.button>
         </header>
 
-        {/* Main Content */}
         <main className="space-y-10">
           <motion.section
             initial={{ opacity: 0, y: 20 }}
@@ -218,7 +231,7 @@ const App: React.FC = () => {
             {lang === 'ar' ? 'تم التصميم بكل حب لتحويل صورك بخصوصية تامة' : 'Designed with care for private image conversion'}
           </p>
           <p className="text-slate-400 text-sm mt-2 font-bold opacity-75">
-            © 2024 PixelFlex v2.0
+            © 2024 PixelFlex v2.1
           </p>
         </footer>
       </div>
