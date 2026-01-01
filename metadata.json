@@ -1,0 +1,5 @@
+{
+  "name": "PixelFlex - Professional Image Converter",
+  "description": "A high-performance web application for converting images between various formats (JPG, PNG, WEBP) with quality control and Arabic/English support.",
+  "requestFramePermissions": []
+}
